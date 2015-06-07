@@ -103,48 +103,58 @@ By including the `siglength` field, I can allow leaf nodes signatures to be "pro
 For the use case described above, you can imagine that system A does the following:
 
 
-    List<String> eventSigs = new ArrayList<>();
-    
-    while (true) {
-      Event event = receiveEvent();
-      String hash = computeHash(event);
-      // ... process and transmit the message to the downstream Queue
-      sendToDownstreamQueue(hash, event);
-    
-      eventSigs.add(has);
-    
-      if (isTimeForCheckpoint()) {
-        MerkleTree mtree = new MerkleTree(eventSigs);
-        eventSigs.clear();
-        byte[] serializedTree = mtree.serialize();
-        sendToDownstreamQueue(serializedTree);
-      }
-    }
+List<String> eventSigs = new ArrayList<>();
 
+```java
+while (true) {
+  Event event = receiveEvent();
+  String hash = computeHash(event);
+  // ... process and transmit the message to the downstream Queue
+  sendToDownstreamQueue(hash, event);
+
+  eventSigs.add(has);
+
+  if (isTimeForCheckpoint()) {
+    MerkleTree mtree = new MerkleTree(eventSigs);
+    eventSigs.clear();
+    byte[] serializedTree = mtree.serialize();
+    sendToDownstreamQueue(serializedTree);
+  }
+}
+```  
 
 And system C would then do something like:
 
-    List<String> eventSigs = new ArrayList<>();
-    
-    while (true) {
-      Event event = receiveEvent();
-    
-      if (isCheckpointMessage(event)) {
-        MerkleTree mytree = new MerkleTree(eventSigs);
-        eventSigs.clear();
-    
-        byte[] treeBytes = event.getDataAsBytes();
-        MerkleTree expectedTree = MerkleDeserializer.deserialize(treeBytes);
-        byte[] myRootSig = mytree.getRoot().sig;
-        byte[] expectedRootSig = expectedTree.getRoot().sig;
-        if (!signaturesAreEqual(myRootSig, expectedRootSig)) {
-          evaluateTreeDifferences(mytree, expectedTree);
-          // ... send alert
-        }
-    
-      } else {
-        String hash = event.getOriginalSignature();
-        eventSigs.add(hash);
-        // .. do something with event
-      }
+
+```java
+List<String> eventSigs = new ArrayList<>();
+
+while (true) {
+  Event event = receiveEvent();
+
+  if (isCheckpointMessage(event)) {
+    MerkleTree mytree = new MerkleTree(eventSigs);
+    eventSigs.clear();
+
+    byte[] treeBytes = event.getDataAsBytes();
+    MerkleTree expectedTree = MerkleDeserializer.deserialize(treeBytes);
+    byte[] myRootSig = mytree.getRoot().sig;
+    byte[] expectedRootSig = expectedTree.getRoot().sig;
+    if (!signaturesAreEqual(myRootSig, expectedRootSig)) {
+      evaluateTreeDifferences(mytree, expectedTree);
+      // ... send alert
     }
+
+  } else {
+    String hash = event.getOriginalSignature();
+    eventSigs.add(hash);
+    // .. do something with event
+  }
+}
+```  
+
+
+
+## LICENSE
+
+The MIT License.
