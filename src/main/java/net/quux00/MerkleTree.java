@@ -9,11 +9,28 @@ import java.util.Queue;
 import java.util.zip.Adler32;
 
 /**
- * DOCUMENT ME
+ * MerkleTree is an implementation of a Merkle binary hash tree where the leaves
+ * are signatures (hashes, digests, CRCs, etc.) of some underlying data structure
+ * that is not explicitly part of the tree.
  * 
- * TODO:
- * + support non-powers-of-two trees
- * + write deserialize method and test it
+ * The internal leaves of the tree are signatures of its two child nodes. If an
+ * internal node has only one child, the the signature of the child node is
+ * adopted ("promoted").
+ * 
+ * MerkleTree knows how to serialize itself to a binary format, but does not
+ * implement the Java Serializer interface.  The {@link #serialize()} method
+ * returns a byte array, which should be passed to 
+ * {@link MerkleDeserializer#deserialize(byte[])} in order to hydrate into
+ * a MerkleTree in memory.
+ * 
+ * This MerkleTree is intentionally ignorant of the hashing/checksum algorithm
+ * used to generate the leaf signatures. It uses Adler32 CRC to generate
+ * signatures for all internal node signatures (other than those "promoted"
+ * that have only one child).
+ * 
+ * The Adler32 CRC is not cryptographically secure, so this implementation
+ * should NOT be used in scenarios where the data is being received from
+ * an untrusted source.
  */
 public class MerkleTree {
 
@@ -23,16 +40,24 @@ public class MerkleTree {
   public static final byte LEAF_SIG_TYPE = 0x0;
   public static final byte INTERNAL_SIG_TYPE = 0x01;
   
-  final Adler32 crc = new Adler32();
-  List<String> leafSigs;
-  Node root;
-  int depth;
-  int nnodes;
-  
-  public MerkleTree() {}
+  private final Adler32 crc = new Adler32();
+  private List<String> leafSigs;
+  private Node root;
+  private int depth;
+  private int nnodes;
   
   /**
-   * Use this constructor when you have already constructed the tree (from deserialization).
+   * Use this constructor to create a MerkleTree from a list of leaf signatures.
+   * The Merkle tree is built from the bottom up.
+   * @param leafSignatures
+   */
+  public MerkleTree(List<String> leafSignatures) {
+    constructTree(leafSignatures);
+  }
+  
+  /**
+   * Use this constructor when you have already constructed the tree of Nodes 
+   * (from deserialization).
    * @param treeRoot
    * @param numNodes
    * @param height
@@ -52,7 +77,6 @@ public class MerkleTree {
    * @return
    */
   public byte[] serialize() {
-    // header sizer
     int magicHeaderSz = INT_BYTES;
     int nnodesSz = INT_BYTES;
     int hdrSz = magicHeaderSz + nnodesSz;
@@ -63,6 +87,9 @@ public class MerkleTree {
     int parentSigSz = LONG_BYTES;
     int leafSigSz = leafSigs.get(0).getBytes(StandardCharsets.UTF_8).length;
 
+    // some of the internal nodes may use leaf signatures (when "promoted")
+    // so ensure that the ByteBuffer overestimates how much space is needed
+    // since ByteBuffer does not expand on demand
     int maxSigSz = leafSigSz;
     if (parentSigSz > maxSigSz) {
       maxSigSz = parentSigSz;
@@ -108,9 +135,10 @@ public class MerkleTree {
   }
 
   /**
-   * For now we assume leafSigs is a power of two
+   * Create a tree from the bottom up starting from the leaf signatures.
+   * @param signatures
    */
-  public void constructTree(List<String> signatures) {
+  void constructTree(List<String> signatures) {
     if (signatures.size() <= 1) {
       throw new IllegalArgumentException("Must be at least two signatures to construct a Merkle tree");
     }
@@ -122,7 +150,7 @@ public class MerkleTree {
     depth = 1;
     
     while (parents.size() > 1) {
-      parents = nextLevel(parents);
+      parents = internalLevel(parents);
       depth++;
       nnodes += parents.size();
     }
@@ -144,7 +172,10 @@ public class MerkleTree {
   }
   
 
-  List<Node> nextLevel(List<Node> children) {
+  /**
+   * Constructs an internal level of the tree
+   */
+  List<Node> internalLevel(List<Node> children) {
     List<Node> parents = new ArrayList<Node>(children.size() / 2);
     
     for (int i = 0; i < children.size() - 1; i += 2) {
@@ -211,8 +242,6 @@ public class MerkleTree {
     leaf.sig = signature.getBytes(StandardCharsets.UTF_8);
     return leaf;
   }
-
-  
   
   byte[] internalHash(byte[] leftChildSig, byte[] rightChildSig) {
     crc.reset();
@@ -221,6 +250,18 @@ public class MerkleTree {
     return longToByteArray(crc.getValue());
   }
 
+  
+  /* ---[ Node class ]--- */
+  
+  /**
+   * The Node class should be treated as immutable, though immutable
+   * is not enforced in the current design.
+   * 
+   * A Node knows whether it is an internal or leaf node and its signature.
+   * 
+   * Internal Nodes will have at least one child (always on the left).
+   * Leaf Nodes will have no children (left = right = null).
+   */
   static class Node {
     public byte type;  // INTERNAL_SIG_TYPE or LEAF_SIG_TYPE
     public byte[] sig; // signature of the node

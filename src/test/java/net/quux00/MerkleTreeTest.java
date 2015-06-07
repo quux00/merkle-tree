@@ -344,8 +344,7 @@ public class MerkleTreeTest {
     assertEquals(expectedRootSig, rootSig);
 
   
-    MerkleDeserializer mdeser = new MerkleDeserializer();
-    MerkleTree dtree = mdeser.deserialize(serializedTree);
+    MerkleTree dtree = MerkleDeserializer.deserialize(serializedTree);
     assertEquals(MerkleTree.INTERNAL_SIG_TYPE, dtree.getRoot().type);
     assertArrayEquals(root.sig, dtree.getRoot().sig);
     
@@ -425,8 +424,7 @@ public class MerkleTreeTest {
     assertEquals(expectedRootSig, rootSig);
 
   
-    MerkleDeserializer mdeser = new MerkleDeserializer();
-    MerkleTree dtree = mdeser.deserialize(serializedTree);
+    MerkleTree dtree = MerkleDeserializer.deserialize(serializedTree);
     assertEquals(MerkleTree.INTERNAL_SIG_TYPE, dtree.getRoot().type);
     assertArrayEquals(root.sig, dtree.getRoot().sig);
     
@@ -510,8 +508,7 @@ public class MerkleTreeTest {
 
 
     // deserialize
-    MerkleDeserializer mdeser = new MerkleDeserializer();
-    MerkleTree dtree = mdeser.deserialize(serializedTree);
+    MerkleTree dtree = MerkleDeserializer.deserialize(serializedTree);
     assertEquals(MerkleTree.INTERNAL_SIG_TYPE, dtree.getRoot().type);
     assertArrayEquals(root.sig, dtree.getRoot().sig);
     
@@ -557,8 +554,7 @@ public class MerkleTreeTest {
     
     
     // deserialize
-    MerkleDeserializer mdeser = new MerkleDeserializer();
-    MerkleTree dtree = mdeser.deserialize(serializedTree);
+    MerkleTree dtree = MerkleDeserializer.deserialize(serializedTree);
     assertEquals(MerkleTree.INTERNAL_SIG_TYPE, dtree.getRoot().type);
     assertArrayEquals(root.sig, dtree.getRoot().sig);
     
@@ -566,12 +562,13 @@ public class MerkleTreeTest {
     assertEquals(m1019tree.getNumNodes(), dtree.getNumNodes());
   }
   
-  
+
+  // must have at least two entries to construct a MerkleTree
+  @SuppressWarnings("unused")
   @Test(expected=IllegalArgumentException.class)
   public void testConstruct1LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList("abc");
-    mtree.constructTree(signatures);
+    new MerkleTree(signatures);
   }
   
   /* ---[ helper methods ]--- */
@@ -582,27 +579,22 @@ public class MerkleTreeTest {
   }
 
   MerkleTree construct2LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "26fe8e189fd5bb3fe56d4d3def6494802cb8cba3"
         );
-    mtree.constructTree(signatures);
-    return mtree;    
+    return new MerkleTree(signatures);
   }
 
   MerkleTree construct1019LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = new ArrayList<>(1019);
     for (int i = 0; i < 1019; i++) {
       signatures.add(UUID.randomUUID().toString());
     }
-    mtree.constructTree(signatures);
-    return mtree;    
+    return new MerkleTree(signatures);
   }
   
   MerkleTree construct9LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
@@ -614,13 +606,11 @@ public class MerkleTreeTest {
         "994d89c38e5b9384235696a0efea5b6b93efb270",
         "26fe8e189fd5bb3fe56d4d3def6494802cb8cba3"
         );
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
 
 
   MerkleTree construct10LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
@@ -633,13 +623,11 @@ public class MerkleTreeTest {
         "26fe8e189fd5bb3fe56d4d3def6494802cb8cba3",
         "3cf4172b27b7b182db0dd68276f08f7c27561c32"
         );
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
 
   
   MerkleTree construct8LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
@@ -650,43 +638,36 @@ public class MerkleTreeTest {
         "e45922755802b52f11599d4746035ecad18c0c46",
         "994d89c38e5b9384235696a0efea5b6b93efb270"
         );
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
   
   MerkleTree construct4LeafTree() {
-    MerkleTree mtree = new MerkleTree();
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
         "461848c8b70e5a57bd94008b2622796ec26db657",
         "c938037dc70d107b3386a86df7fef17a9983cf53");
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
   
   MerkleTree construct4LeafTreeOrder2() {
-    MerkleTree mtree = new MerkleTree();
     // inverted [1] and [2] from the other order
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "461848c8b70e5a57bd94008b2622796ec26db657",
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
         "c938037dc70d107b3386a86df7fef17a9983cf53");
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
 
   MerkleTree construct4LeafTreeOrder3() {
-    MerkleTree mtree = new MerkleTree();
     // inverted [2] and [3] from the other order
     List<String> signatures = Arrays.asList(
         "52e422506d8238ef3196b41db4c41ee0afd659b6", 
         "6d0b51991ac3806192f3cb524a5a5d73ebdaacf8",
         "c938037dc70d107b3386a86df7fef17a9983cf53",
         "461848c8b70e5a57bd94008b2622796ec26db657");
-    mtree.constructTree(signatures);
-    return mtree;
+    return new MerkleTree(signatures);
   }
 
 }
