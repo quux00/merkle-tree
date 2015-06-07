@@ -55,12 +55,14 @@ It is useful to be able to distinguish leaf from internal nodes (especially when
 
 So my `MerkleTree.Node` class is:
 
-    static class Node {
-      public byte type;  // INTERNAL_SIG_TYPE or LEAF_SIG_TYPE
-      public byte[] sig; // signature of the node
-      public Node left;
-      public Node right;
-    }
+```java
+static class Node {
+  public byte type;  // INTERNAL_SIG_TYPE or LEAF_SIG_TYPE
+  public byte[] sig; // signature of the node
+  public Node left;
+  public Node right;
+}
+```
 
 
 ## Hash/Digest Algorithm
@@ -102,10 +104,9 @@ By including the `siglength` field, I can allow leaf nodes signatures to be "pro
 
 For the use case described above, you can imagine that system A does the following:
 
-
+```java
 List<String> eventSigs = new ArrayList<>();
 
-```java
 while (true) {
   Event event = receiveEvent();
   String hash = computeHash(event);
